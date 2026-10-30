@@ -104,19 +104,19 @@ def _outcome(prev_pick: dict, today_price) -> tuple[str, str]:
     side = prev_pick.get("side")
     entry, stop, target = prev_pick.get("entry"), prev_pick.get("stop"), prev_pick.get("target")
     if today_price is None or entry in (None, 0):
-        return "unknown", "Price pata nahi"
+        return "unknown", "No price"
     if side == "BUY":
         if target is not None and today_price >= target:
-            return "win", "🎯 Target aa gaya tha — profit"
+            return "win", "🎯 Target was hit — profit"
         if stop is not None and today_price <= stop:
-            return "loss", "🛑 Stop-loss lag gaya — loss"
-        return "running", f"Chal raha hai ({(today_price / entry - 1) * 100:+.1f}%)"
+            return "loss", "🛑 Stop-loss hit — loss"
+        return "running", f"Running ({(today_price / entry - 1) * 100:+.1f}%)"
     # SELL / short
     if target is not None and today_price <= target:
-        return "win", "🎯 Target aa gaya tha — profit"
+        return "win", "🎯 Target was hit — profit"
     if stop is not None and today_price >= stop:
-        return "loss", "🛑 Stop-loss lag gaya — loss"
-    return "running", f"Chal raha hai ({(entry / today_price - 1) * 100:+.1f}%)"
+        return "loss", "🛑 Stop-loss hit — loss"
+    return "running", f"Running ({(entry / today_price - 1) * 100:+.1f}%)"
 
 
 def compare(prev_snap: dict | None, curr_snap: dict, horizon: str) -> dict:
@@ -155,7 +155,7 @@ def compare(prev_snap: dict | None, curr_snap: dict, horizon: str) -> dict:
             symbol=s, name=prev_pick.get("name", s),
             prev=prev_pick, today=today,
             still_buy=still_buy,
-            today_signal=today_signal or "data nahi",
+            today_signal=today_signal or "no data",
             outcome=_outcome(prev_pick, today_price),
         ))
     return dict(have_prev=True, prev_date=prev_snap.get("date"),
