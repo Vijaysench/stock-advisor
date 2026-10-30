@@ -217,6 +217,70 @@ NAMES = {
 }
 NIFTY50 = ['RELIANCE', 'TCS', 'HDFCBANK', 'ICICIBANK', 'INFY', 'BHARTIARTL', 'SBIN', 'ITC', 'HINDUNILVR', 'LT', 'KOTAKBANK', 'AXISBANK', 'BAJFINANCE', 'BAJAJFINSV', 'ASIANPAINT', 'MARUTI', 'M&M', 'SUNPHARMA', 'TITAN', 'ULTRACEMCO', 'NTPC', 'POWERGRID', 'ONGC', 'COALINDIA', 'TATASTEEL', 'JSWSTEEL', 'HINDALCO', 'WIPRO', 'HCLTECH', 'TECHM', 'ADANIENT', 'ADANIPORTS', 'APOLLOHOSP', 'BAJAJ-AUTO', 'BEL', 'CIPLA', 'DRREDDY', 'EICHERMOT', 'ETERNAL', 'GRASIM', 'HDFCLIFE', 'HEROMOTOCO', 'INDUSINDBK', 'JIOFIN', 'NESTLEIND', 'SBILIFE', 'SHRIRAMFIN', 'TATACONSUM', 'TMPV', 'TRENT']
 ALL_STOCKS = list(NAMES.keys())
+
+# --------------------------------------------------------------------- sectors
+# Sector tags for the curated large/mid-caps. Anything not listed shows as
+# "Other" – good enough to group today's picks and see where strength is.
+SECTORS = {
+    "Banking & Finance": [
+        'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BAJFINANCE', 'BAJAJFINSV',
+        'INDUSINDBK', 'BANKBARODA', 'PNB', 'CANBK', 'UNIONBANK', 'IDFCFIRSTB', 'FEDERALBNK',
+        'AUBANK', 'BANDHANBNK', 'YESBANK', 'CHOLAFIN', 'SHRIRAMFIN', 'JIOFIN', 'SBICARD',
+        'HDFCAMC', 'MUTHOOTFIN', 'RECLTD', 'PFC', 'IRFC', 'BAJAJHLDNG', 'ABCAPITAL', 'LICHSGFIN',
+        'M&MFIN', 'POONAWALLA', 'MCX', 'CDSL', 'ANGELONE', 'CAMS', 'HUDCO', 'BSE', 'BAJAJHFL',
+    ],
+    "Insurance": ['HDFCLIFE', 'SBILIFE', 'ICICIGI', 'ICICIPRULI', 'LICI', 'POLICYBZR'],
+    "IT & Tech": [
+        'TCS', 'INFY', 'WIPRO', 'HCLTECH', 'TECHM', 'LTIM', 'PERSISTENT', 'COFORGE', 'MPHASIS',
+        'OFSS', 'KPITTECH', 'LTTS', 'TATAELXSI', 'TATACOMM',
+    ],
+    "Pharma & Healthcare": [
+        'SUNPHARMA', 'CIPLA', 'DRREDDY', 'DIVISLAB', 'ZYDUSLIFE', 'TORNTPHARM', 'LUPIN',
+        'AUROPHARMA', 'ALKEM', 'MANKIND', 'BIOCON', 'GLENMARK', 'APOLLOHOSP', 'MAXHEALTH',
+        'FORTIS', 'LALPATHLAB',
+    ],
+    "Auto": [
+        'MARUTI', 'M&M', 'TMPV', 'EICHERMOT', 'BAJAJ-AUTO', 'HEROMOTOCO', 'TVSMOTOR', 'ASHOKLEY',
+        'BHARATFORG', 'MRF', 'APOLLOTYRE', 'BALKRISIND', 'EXIDEIND', 'TIINDIA', 'SONACOMS', 'MOTHERSON',
+    ],
+    "FMCG & Consumer": [
+        'HINDUNILVR', 'ITC', 'NESTLEIND', 'TATACONSUM', 'GODREJCP', 'COLPAL', 'DABUR', 'MARICO',
+        'BRITANNIA', 'VBL', 'UNITDSPR', 'UBL', 'PATANJALI', 'JUBLFOOD', 'DMART', 'PAGEIND',
+        'KALYANKJIL', 'TITAN', 'TRENT', 'NYKAA', 'ETERNAL', 'SWIGGY',
+    ],
+    "Oil, Gas & Energy": [
+        'RELIANCE', 'ONGC', 'BPCL', 'IOC', 'GAIL', 'HINDPETRO', 'PETRONET', 'OIL', 'IGL', 'ATGL',
+    ],
+    "Power & Utilities": [
+        'NTPC', 'POWERGRID', 'TATAPOWER', 'ADANIPOWER', 'ADANIGREEN', 'JSWENERGY', 'TORNTPOWER',
+        'ADANIENSOL', 'NHPC', 'SJVN', 'IREDA', 'WAAREEENER', 'PREMIERENE',
+    ],
+    "Metals & Mining": [
+        'TATASTEEL', 'JSWSTEEL', 'HINDALCO', 'VEDL', 'JINDALSTEL', 'SAIL', 'NMDC', 'HINDZINC', 'COALINDIA',
+    ],
+    "Cement & Building": [
+        'ULTRACEMCO', 'SHREECEM', 'AMBUJACEM', 'ACC', 'DALBHARAT', 'JKCEMENT', 'GRASIM',
+        'ASTRAL', 'SUPREMEIND', 'PIDILITIND', 'HAVELLS', 'POLYCAB', 'KEI', 'VOLTAS', 'BLUESTARCO',
+        'CROMPTON', 'BERGEPAINT', 'ASIANPAINT',
+    ],
+    "Infra & Capital Goods": [
+        'LT', 'SIEMENS', 'ABB', 'BEL', 'HAL', 'BHEL', 'CUMMINSIND', 'THERMAX', 'CGPOWER', 'HONAUL',
+        'BDL', 'MAZDOCK', 'COCHINSHIP', 'SOLARINDS', 'DIXON',
+    ],
+    "Realty": ['DLF', 'LODHA', 'GODREJPROP', 'OBEROIRLTY', 'PRESTIGE', 'PHOENIXLTD'],
+    "Chemicals": ['TATACHEM', 'UPL', 'PIIND', 'SRF', 'DEEPAKNTR'],
+    "Telecom & Media": ['BHARTIARTL', 'IDEA', 'INDUSTOWER', 'ZEEL', 'PVRINOX'],
+    "Infra Services & Logistics": [
+        'ADANIPORTS', 'ADANIENT', 'INDIGO', 'CONCOR', 'GMRAIRPORT', 'DELHIVERY', 'IRCTC',
+        'RVNL', 'IRCON', 'INDHOTEL', 'NAUKRI', 'PAYTM', 'HYUNDAI',
+    ],
+}
+# reverse lookup: symbol -> sector
+SYMBOL_SECTOR = {sym: sec for sec, syms in SECTORS.items() for sym in syms}
+
+
+def sector_of(symbol: str) -> str:
+    return SYMBOL_SECTOR.get(symbol, "Other")
 UNIVERSES = {
     f"Sab stocks ({len(ALL_STOCKS)})": ALL_STOCKS,
     "Sirf Nifty 50 (fast)": NIFTY50,
