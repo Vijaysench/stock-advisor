@@ -228,6 +228,11 @@ def load_fundamentals(sym: str):
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def load_key_stats(sym: str, _stamp=None):
+    return data.key_stats(sym)
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_universe_map():
     allmap = data.nse_all_equities()
     n500 = data.nse_500()
@@ -366,6 +371,13 @@ def chance_badge(ch):
 
 def chance_word(ch):
     return "Good" if ch >= 60 else "Okay" if ch >= 52 else "Low"
+
+
+def factor_bar(name, val):
+    col = "var(--green)" if val >= 66 else "var(--amber)" if val >= 45 else "var(--red)"
+    return (f"<div style='margin:7px 0'><div style='display:flex;justify-content:space-between;"
+            f"font-size:.85rem'><span>{name}</span><span style='color:var(--mut)'>{val}/100</span></div>"
+            f"<div class='meter'><span style='width:{max(3,val)}%;background:{col}'></span></div></div>")
 
 
 def regime_line():
@@ -570,6 +582,7 @@ if page == P_HOME:
         sector_pick = f2.selectbox("🏭 Sector", ["All"] + sectors_present, index=0)
         min_chance = f3.select_slider("🎯 Min chance %", options=[0, 50, 52, 55, 58, 60, 65], value=0)
         sort_by = f4.selectbox("↕️ Sort by", ["Best chance", "Highest price move", "Most tested", "Strongest trend"])
+        fund_only = st.toggle("⭐ Strong fundamentals only — also check company quality (a bit slower)", value=False)
     price_lo, price_hi = PRICE_BANDS[price_band]
 
     active = []
@@ -583,6 +596,20 @@ if page == P_HOME:
         st.caption("Filters on: " + " · ".join(active))
 
     picks = top_buys(h, n=9, sector=sector_pick, min_chance=min_chance, sort_by=sort_by)
+    if fund_only and not (demo or is_demo):
+        with st.spinner("Checking company quality for these picks…"):
+            kept = []
+            for rr in top_buys(h, n=24, sector=sector_pick, min_chance=min_chance, sort_by=sort_by):
+                fsc = engine.fundamental_score(load_key_stats(rr["symbol"], fetched))
+                if fsc["score"] is not None and fsc["score"] >= 55:
+                    rr["_fund"] = fsc["score"]
+                    kept.append(rr)
+                if len(kept) >= 9:
+                    break
+            picks = kept
+        if not picks:
+            st.caption("No picks passed the strong-fundamentals check right now (data may be limited). "
+                       "Turn the toggle off to see all technical picks.")
     if not picks:
         st.warning("No good BUY stock for this type with these filters. **Saving money is also profit** — "
                    "loosen the filters, try another style, or check back tomorrow.")
@@ -599,7 +626,7 @@ if page == P_HOME:
                 with st.container(border=True):
                     st.markdown(f"""<div class='pick'>
 <h4>{r['name']}</h4><div class='sub'>{r['symbol']} · now ₹{r['price']:,.2f}</div>
-<div style='margin:4px 0 2px'><span class='badge b-sec'>{sec}</span>{chance_badge(r['chance'])}<span class='badge b-mid'>{r['chance']:.0f}% chance</span></div>
+<div style='margin:4px 0 2px'><span class='badge b-sec'>{sec}</span>{chance_badge(r['chance'])}<span class='badge b-mid'>{r['chance']:.0f}% chance</span>{"<span class='badge b-hi'>⭐ Quality " + str(r['_fund']) + "</span>" if r.get('_fund') else ""}</div>
 <div class='row3'><div class='r-buy'>{trig}<b>₹{r['entry']:,.1f}</b></div>
 <div class='r-sl'>Stop-loss<b>₹{r['stop']:,.1f}</b>{dn:.1f}%</div>
 <div class='r-tg'>Target<b>₹{r['target']:,.1f}</b>+{up:.1f}%</div></div>
@@ -879,6 +906,50 @@ elif page == P_CHECK:
         c2.progress(min(1.0, max(0.0, r["chance"] / 100)))
         c2.caption("Chance is balanced against the overall market record, so a lucky 3-of-3 doesn't show as 100%. "
                    "55-65% chance + a stop-loss = a very good system. Nobody can honestly promise 90%.")
+
+    # ---- research-desk view: fundamentals + factors + conviction
+    st.markdown("<div class='seclabel'>🏦 How a research desk would judge it</div>", unsafe_allow_html=True)
+    if demo or is_demo:
+        st.caption("Company fundamentals need live data — turn demo off to see quality & conviction.")
+    else:
+        with st.spinner("Checking company fundamentals…"):
+            ks = load_key_stats(sym, fetched)
+        fsc = engine.fundamental_score(ks)
+        conv = engine.conviction(r.get("chance", 50) or 50, fsc["score"], r.get("rs", 0.0), regime.get("ok"))
+        facs = engine.factor_scores(engine.add_indicators(daily[sym]).iloc[-1], fsc["score"], r.get("rs", 0.0))
+        cc1, cc2 = st.columns([1, 1])
+        with cc1:
+            st.markdown(f"<div class='sub'>Overall conviction (all parameters together)</div>"
+                        f"<div class='price'>{conv['score']}/100</div>"
+                        f"<span class='badge {conv['tone']}'>{conv['label']}</span>", unsafe_allow_html=True)
+            buy_side = r["signal"] == "BUY"
+            if conv["score"] >= 62 and buy_side:
+                synth = "Strong candidate: a solid company that is also trending up and beating the market."
+            elif conv["score"] >= 52 and buy_side:
+                synth = "Reasonable buy: decent on most parameters. Keep the stop-loss and don't over-size."
+            elif buy_side:
+                synth = "Chart says buy, but company quality/market mood is weak — be cautious, smaller size."
+            else:
+                synth = "Not a buy right now on the combined view — better to wait."
+            st.caption(synth)
+        with cc2:
+            bars = "".join(factor_bar(k, v) for k, v in facs.items())
+            st.markdown(bars, unsafe_allow_html=True)
+            st.caption("Trend/Momentum/Stability from price; Quality from company fundamentals.")
+        if fsc["have"]:
+            fc1, fc2 = st.columns(2)
+            with fc1:
+                st.markdown(f"**Company quality: {fsc['score']}/100**")
+                for t in fsc["pros"]:
+                    st.markdown(f"- ✅ {t}")
+                for t in fsc["cons"]:
+                    st.markdown(f"- ⚠️ {t}")
+            with fc2:
+                if fsc["rows"]:
+                    st.table(pd.DataFrame([(lbl, val) for lbl, val, _ in fsc["rows"]], columns=["Measure", "Value"]))
+        else:
+            st.caption("Company fundamentals weren't available from the data source for this stock, "
+                       "so conviction is based on the price/technical parameters only.")
 
     # ---- why
     c1, c2 = st.columns(2)

@@ -129,49 +129,49 @@ def _rules(d: pd.DataFrame, horizon: str):
     if horizon == "Intraday":
         return [
             (15, (c > d.ema9) & (d.ema9 > d.ema21), (c < d.ema9) & (d.ema9 < d.ema21),
-             "Chhota trend UPAR hai (price 9 aur 21 din ki average line ke upar)", "Chhota trend NEECHE hai (price 9 aur 21 din ki average line ke neeche)"),
+             "Short-term trend is UP (price above the 9 & 21-day average lines)", "Short-term trend is DOWN (price below the 9 & 21-day average lines)"),
             (15, d.rsi.between(52, 72), d.rsi.between(28, 48),
-             "RSI strong zone me hai (buyers active hain)", "RSI kamzor zone me hai (sellers active hain)"),
+             "RSI is in a strong zone (buyers active)", "RSI is in a weak zone (sellers active)"),
             (15, (d.macd_hist > 0) & (d.macd_hist > d.macd_hist.shift(1)),
              (d.macd_hist < 0) & (d.macd_hist < d.macd_hist.shift(1)),
-             "Momentum badh raha hai (MACD upar ja raha hai)", "Momentum gir raha hai (MACD neeche ja raha hai)"),
+             "Momentum is rising (MACD moving up)", "Momentum is falling (MACD moving down)"),
             (15, (d.vol_ratio > 1.3) & (c > c.shift(1)), (d.vol_ratio > 1.3) & (c < c.shift(1)),
-             "Price badha aur volume bhi normal se zyada - bade players kharid rahe hain", "Price gira aur volume zyada - bade players bech rahe hain"),
+             "Price rose on above-normal volume — big players buying", "Price fell on high volume — big players selling"),
             (10, d.close_pos > 0.7, d.close_pos < 0.3,
-             "Kal din ke HIGH ke paas band hua - buyers ka control", "Kal din ke LOW ke paas band hua - sellers ka control"),
+             "Closed near the day's HIGH — buyers in control", "Closed near the day's LOW — sellers in control"),
             (10, c > d.High.shift(1), c < d.Low.shift(1),
-             "Pichle din ke high ke upar band hua (breakout)", "Pichle din ke low ke neeche band hua (breakdown)"),
+             "Closed above the previous day's high (breakout)", "Closed below the previous day's low (breakdown)"),
             (10, (d.adx > 20) & (d.pdi > d.mdi), (d.adx > 20) & (d.mdi > d.pdi),
-             "Trend me dum hai (ADX 20 se upar, buyers aage)", "Girawat me dum hai (ADX 20 se upar, sellers aage)"),
+             "Trend has strength (ADX above 20, buyers ahead)", "Downtrend has strength (ADX above 20, sellers ahead)"),
             (10, c < d.bb_up, c > d.bb_lo,
-             "Price zyada khincha hua nahi hai (abhi bhi jagah hai upar jaane ki)", "Price zyada neeche khincha hua nahi hai"),
+             "Price isn't overstretched (still room to rise)", "Price isn't overstretched to the downside"),
         ]
     if horizon == "Weekly":
         return [
             (20, (c > d.ema21) & (d.ema21 > d.ema50), (c < d.ema21) & (d.ema21 < d.ema50),
-             "Beech ka trend UPAR hai (price 21 aur 50 din ki line ke upar)", "Beech ka trend NEECHE hai (price 21 aur 50 din ki line ke neeche)"),
+             "Medium-term trend is UP (price above the 21 & 50-day lines)", "Medium-term trend is DOWN (price below the 21 & 50-day lines)"),
             (15, d.rsi.between(50, 68), d.rsi.between(32, 50),
-             "RSI healthy hai (50-68) - na kamzor, na zyada garam", "RSI kamzor hai (32-50)"),
-            (15, d.macd_hist > 0, d.macd_hist < 0, "MACD signal line ke upar - momentum positive", "MACD signal line ke neeche - momentum negative"),
+             "RSI is healthy (50-68) — not weak, not overheated", "RSI is weak (32-50)"),
+            (15, d.macd_hist > 0, d.macd_hist < 0, "MACD above its signal line — momentum positive", "MACD below its signal line — momentum negative"),
             (15, (d.adx > 20) & (d.pdi > d.mdi), (d.adx > 20) & (d.mdi > d.pdi),
-             "Strong trend aur buyers aage hain (ADX)", "Strong trend aur sellers aage hain (ADX)"),
+             "Strong trend with buyers ahead (ADX)", "Strong trend with sellers ahead (ADX)"),
             (10, ((c / d.ema21 - 1).abs() < 0.03) & (c > d.ema21),
              ((c / d.ema21 - 1).abs() < 0.03) & (c < d.ema21),
-             "Price 21-din ki support line ke paas - kam risk wali entry", "21-din ki line pe ruk ke wapas gira (resistance)"),
+             "Price near the 21-day support line — lower-risk entry", "Stalled at the 21-day line and fell back (resistance)"),
             (10, d.vol_ratio5 > 1.0, d.vol_ratio5 > 1.0,
-             "Pichle 5 din volume normal se zyada - interest badh raha hai", "Girawat me volume zyada - selling pressure"),
-            (15, d.supertrend_up, ~d.supertrend_up, "Supertrend HARA hai (buy mode)", "Supertrend LAAL hai (sell mode)"),
+             "Volume above normal over the last 5 days — rising interest", "High volume on the decline — selling pressure"),
+            (15, d.supertrend_up, ~d.supertrend_up, "Supertrend is GREEN (buy mode)", "Supertrend is RED (sell mode)"),
         ]
     # Monthly
     return [
         (25, (c > d.ema50) & (d.ema50 > d.ema200), (c < d.ema50) & (d.ema50 < d.ema200),
-         "Lamba trend UPAR hai (price 50 aur 200 din ki line ke upar)", "Lamba trend NEECHE hai (price 50 aur 200 din ki line ke neeche)"),
-        (15, d.ret60 > 5, d.ret60 < -5, "Pichle 3 mahine me 5% se zyada badha", "Pichle 3 mahine me 5% se zyada gira"),
-        (15, d.from_hi > -12, d.from_hi < -30, "Saal ke high ke 12% ke andar - market ka leader stock", "Saal ke high se 30% se zyada neeche - kamzor stock"),
-        (10, d.rsi.between(50, 70), d.rsi < 45, "RSI strong hai", "RSI kamzor hai"),
-        (15, d.supertrend_up, ~d.supertrend_up, "Supertrend HARA hai (buy mode)", "Supertrend LAAL hai (sell mode)"),
-        (10, d.adx > 20, d.adx > 20, "Trend me dum hai (ADX 20 se upar)", "Trend me dum hai (ADX 20 se upar)"),
-        (10, d.macd > 0, d.macd < 0, "MACD zero ke upar - lamba momentum positive", "MACD zero ke neeche - lamba momentum negative"),
+         "Long-term trend is UP (price above the 50 & 200-day lines)", "Long-term trend is DOWN (price below the 50 & 200-day lines)"),
+        (15, d.ret60 > 5, d.ret60 < -5, "Up more than 5% over the last 3 months", "Down more than 5% over the last 3 months"),
+        (15, d.from_hi > -12, d.from_hi < -30, "Within 12% of its 1-year high — a market leader", "More than 30% below its 1-year high — a weak stock"),
+        (10, d.rsi.between(50, 70), d.rsi < 45, "RSI is strong", "RSI is weak"),
+        (15, d.supertrend_up, ~d.supertrend_up, "Supertrend is GREEN (buy mode)", "Supertrend is RED (sell mode)"),
+        (10, d.adx > 20, d.adx > 20, "Trend has strength (ADX above 20)", "Trend has strength (ADX above 20)"),
+        (10, d.macd > 0, d.macd < 0, "MACD above zero — long-term momentum positive", "MACD below zero — long-term momentum negative"),
     ]
 
 
@@ -191,9 +191,9 @@ def reasons_today(d: pd.DataFrame, horizon: str, side: str):
         bull_ok = bool(b.iloc[-1]) if not pd.isna(b.iloc[-1]) else False
         bear_ok = bool(s.iloc[-1]) if not pd.isna(s.iloc[-1]) else False
         if side == "BUY":
-            (out_for if bull_ok else out_against).append((pts, rb if bull_ok else f"Nahi hai: {rb}"))
+            (out_for if bull_ok else out_against).append((pts, rb if bull_ok else f"Missing: {rb}"))
         else:
-            (out_for if bear_ok else out_against).append((pts, rs if bear_ok else f"Nahi hai: {rs}"))
+            (out_for if bear_ok else out_against).append((pts, rs if bear_ok else f"Missing: {rs}"))
     return out_for, out_against
 
 
@@ -341,40 +341,40 @@ def timing_advice(horizon: str, side: str, entry: float, last) -> list[str]:
     if horizon == "Intraday":
         if side == "BUY":
             return [
-                "9:15 se 9:30 tak kuch mat karo - pehle 15 minute bahut ulta-seedha chalta hai.",
-                f"9:30 se 11:00 ke beech jab price {e} (kal ka high) ke UPAR jaaye aur tike, tab kharido.",
-                "Live chart me price peeli VWAP line ke upar ho to aur achha.",
-                "11:30 tak breakout na ho to us din trade chhod do.",
-                "3:10 PM tak har haal me bech do - intraday share raat bhar mat rakho.",
+                "Do nothing from 9:15–9:30 — the first 15 minutes are very choppy.",
+                f"Between 9:30–11:00, buy when price goes ABOVE {e} (yesterday's high) and holds.",
+                "Even better if price is above the yellow VWAP line on the live chart.",
+                "If there's no breakout by 11:30, skip the trade for the day.",
+                "Sell by 3:10 PM no matter what — never hold intraday shares overnight.",
             ]
         return [
-            "9:15 se 9:30 tak kuch mat karo.",
-            f"Short tabhi karo jab price {e} (kal ka low) ke NEECHE jaaye aur tike (9:30-11:00).",
-            "Price VWAP line ke neeche ho to signal aur pakka.",
-            "3:10 PM tak position band karo (broker 3:15-3:20 pe penalty ke saath khud band karta hai).",
-            "Naye log short selling avoid karein - pehle buy side pe practice karo.",
+            "Do nothing from 9:15–9:30.",
+            f"Short only when price goes BELOW {e} (yesterday's low) and holds (9:30–11:00).",
+            "The signal is stronger if price is below the VWAP line.",
+            "Close the position by 3:10 PM (brokers auto-close around 3:15–3:20 with a penalty).",
+            "Beginners should avoid short selling — practice the buy side first.",
         ]
     if horizon == "Weekly":
         if side == "BUY":
             return [
-                f"Achhi entry: {e} ke aas-paas, ya jab price 21-din line (₹{float(last.ema21):,.2f}) ki taraf thoda gire.",
-                "Din ke aakhri ghante (2:30-3:20 PM) me kharido jab din ka direction clear ho.",
-                "Agar stock 2% se zyada gap-up khule to peeche mat bhaago - thoda girne ka wait karo.",
-                "Target aaye, stop-loss aaye, ya 5 trading din poore ho - jo pehle ho, tab bech do.",
+                f"Good entry: around {e}, or when price dips toward the 21-day line (₹{float(last.ema21):,.2f}).",
+                "Buy in the last hour (2:30–3:20 PM) once the day's direction is clear.",
+                "If the stock gaps up more than 2%, don't chase — wait for a small dip.",
+                "Sell on target, stop-loss, or after 5 trading days — whichever comes first.",
             ]
         return [
-            "Trend kamzor hai - naya mat kharido. Agar pehle se hai to kisi upar ki chaal pe nikal jao.",
-            f"Dobara tab dekhna jab price 21-din line (₹{float(last.ema21):,.2f}) ke upar band ho.",
+            "Trend is weak — don't buy fresh. If you already hold it, exit on an up-move.",
+            f"Look again when price closes above the 21-day line (₹{float(last.ema21):,.2f}).",
         ]
     if side == "BUY":
         return [
-            f"2-3 hisson me kharido: pehla hissa {e} ke paas, baaki 50-din line (₹{float(last.ema50):,.2f}) ki taraf girne pe.",
-            "Company ke quarterly results se theek pehle mat kharido - results ki date check karo.",
-            "Lagbhag 1 mahina hold karo. Jab aadha target aa jaaye, stop-loss ko apni kharid price pe le aao (no-loss trade).",
+            f"Buy in 2–3 parts: first near {e}, the rest on dips toward the 50-day line (₹{float(last.ema50):,.2f}).",
+            "Don't buy right before the company's quarterly results — check the results date.",
+            "Hold about 1 month. When half the target is reached, move the stop-loss to your buy price (a no-loss trade).",
         ]
     return [
-        "Lamba trend neeche hai - door raho. Agar pehle se hai to upar ki chaal pe thoda-thoda becho.",
-        f"Dobara tab dekhna jab price 50-din (₹{float(last.ema50):,.2f}) aur 200-din (₹{float(last.ema200):,.2f}) line ke upar aaye.",
+        "Long-term trend is down — stay away. If you hold it, sell in parts on up-moves.",
+        f"Look again when price rises above the 50-day (₹{float(last.ema50):,.2f}) and 200-day (₹{float(last.ema200):,.2f}) lines.",
     ]
 
 
@@ -397,13 +397,13 @@ def intraday_live(df5: pd.DataFrame) -> dict | None:
     last = float(t.Close.iloc[-1])
     vwap = float(t.vwap.iloc[-1]) if not np.isnan(t.vwap.iloc[-1]) else last
     if last > orb_hi and last > vwap:
-        bias = "TEZI - price opening range ke upar aur VWAP ke upar"
+        bias = "BULLISH — price above the opening range and above VWAP"
     elif last < orb_lo and last < vwap:
-        bias = "MANDI - price opening range ke neeche aur VWAP ke neeche"
+        bias = "BEARISH — price below the opening range and below VWAP"
     elif last > vwap:
-        bias = "HALKI TEZI - VWAP ke upar, par range abhi nahi tooti"
+        bias = "MILDLY BULLISH — above VWAP, but the range hasn't broken yet"
     else:
-        bias = "HALKI MANDI - VWAP ke neeche, par range abhi nahi tooti"
+        bias = "MILDLY BEARISH — below VWAP, but the range hasn't broken yet"
     return dict(bars=t, orb_hi=orb_hi, orb_lo=orb_lo, vwap=vwap, last=last, bias=bias, day=str(day))
 
 
@@ -415,11 +415,11 @@ def market_regime(nifty: pd.DataFrame) -> dict:
     above50 = last.Close > last.ema50
     above200 = last.Close > last.ema200
     if above50 and above200:
-        txt, ok = "ACHHA - Nifty upar ke trend me hai. BUY signals zyada kaam karte hain.", True
+        txt, ok = "GOOD — Nifty is in an uptrend. BUY signals work more often.", True
     elif above200:
-        txt, ok = "MIXED - Nifty thoda kamzor hai. Chhoti quantity me trade karo.", None
+        txt, ok = "MIXED — Nifty is a bit weak. Trade smaller sizes.", None
     else:
-        txt, ok = "KAMZOR - Nifty girawat me hai. BUY signals zyada fail hote hain, bahut soch ke trade karo.", False
+        txt, ok = "WEAK — Nifty is falling. BUY signals fail more often; trade very carefully.", False
     return dict(ok=ok, text=txt, close=float(last.Close), chg=float((last.Close / d.Close.iloc[-2] - 1) * 100),
                 rsi=float(last.rsi))
 
@@ -479,13 +479,13 @@ def data_age_days(raw: pd.DataFrame):
 def market_status():
     now = ist_now()
     if now.weekday() >= 5:
-        return "closed", "Aaj market band hai (weekend). Plan agle trading din ke liye hai."
+        return "closed", "Market is closed today (weekend). The plan is for the next trading day."
     t = now.hour * 60 + now.minute
     if t < 9 * 60 + 15:
-        return "pre", "Market abhi khula nahi (9:15 AM pe khulega). Plan aaj ke liye ready hai."
+        return "pre", "Market isn't open yet (opens at 9:15 AM). The plan is ready for today."
     if t <= 15 * 60 + 30:
-        return "open", "Market KHULA hai - live price chal raha hai."
-    return "closed", "Aaj ka market band ho gaya (3:30 PM). Plan agle trading din ke liye hai."
+        return "open", "Market is OPEN — live prices are updating."
+    return "closed", "Today's market has closed (3:30 PM). The plan is for the next trading day."
 
 
 def adjusted_chance(wins: float, trades: int, prior: float, k: int = 10) -> float:
@@ -608,31 +608,31 @@ def live_verdict(r: dict, live_price: float, vwap: float | None, status: str) ->
     """Simple 'what should I do right now' message. Returns (level, text)."""
     side, h = r["side"], r["horizon"]
     if r["signal"] == "WAIT":
-        return "info", "Abhi clear signal nahi hai - RUKO. Kuch na karna bhi ek achha faisla hai."
+        return "info", "No clear signal right now — WAIT. Doing nothing is also a good decision."
     entry, stop, target = r["entry"], r["stop"], r["target"]
     up = side == "BUY"
     if (up and live_price <= stop) or (not up and live_price >= stop):
-        return "error", "Price stop-loss tak pahunch gaya - ye signal FAIL ho gaya. Is trade se door raho."
+        return "error", "Price has reached the stop-loss — this signal has FAILED. Stay away from this trade."
     if (up and live_price >= target) or (not up and live_price <= target):
-        return "warning", "Target pehle hi aa chuka hai - ab entry lena late hai. Chase mat karo."
+        return "warning", "The target is already hit — entering now is too late. Don't chase."
     if h == "Intraday":
         if status != "open":
-            return "info", f"Market khulne pe dekho: price ₹{entry:,.2f} ke {'upar' if up else 'neeche'} jaaye tabhi trade lo."
+            return "info", f"Check at market open: trade only if price goes {'above' if up else 'below'} ₹{entry:,.2f}."
         crossed = live_price > entry if up else live_price < entry
         vw_ok = vwap is None or (live_price > vwap if up else live_price < vwap)
         now = ist_now()
         late = now.hour * 60 + now.minute > 14 * 60 + 30
         if late:
-            return "warning", "2:30 PM ke baad naya intraday trade mat lo - time kam hai."
+            return "warning", "No new intraday trade after 2:30 PM — too little time left."
         if crossed and vw_ok:
-            return "success", f"ABHI {'KHARID' if up else 'SHORT KAR'} SAKTE HO - price trigger ₹{entry:,.2f} ke {'upar' if up else 'neeche'} hai aur VWAP bhi saath hai. Turant stop-loss ₹{stop:,.2f} lagao."
+            return "success", f"You can {'BUY' if up else 'SHORT'} NOW — price is {'above' if up else 'below'} the trigger ₹{entry:,.2f} and VWAP agrees. Set the stop-loss ₹{stop:,.2f} immediately."
         if crossed:
-            return "warning", "Trigger toot gaya par price VWAP ke galat side hai - thoda ruko, confirm hone do."
-        return "info", f"WAIT KARO - price abhi ₹{live_price:,.2f} hai. Jab ₹{entry:,.2f} ke {'upar' if up else 'neeche'} jaaye tab trade lo."
+            return "warning", "Trigger broke but price is on the wrong side of VWAP — wait a bit for confirmation."
+        return "info", f"WAIT — price is ₹{live_price:,.2f} now. Trade when it goes {'above' if up else 'below'} ₹{entry:,.2f}."
     # weekly / monthly
     if not up:
-        return "error", "Trend kamzor hai - MAT KHARIDO. Pehle se hai to bechne ka socho."
+        return "error", "Trend is weak — DON'T BUY. If you already hold it, consider selling."
     risk = abs(entry - stop)
     if live_price > entry + 0.5 * risk:
-        return "warning", f"Price entry (₹{entry:,.2f}) se kaafi upar nikal gaya - abhi mat bhaago, ₹{entry:,.2f} ke paas girne ka wait karo."
-    return "success", f"KHARID SAKTE HO - price entry zone (₹{entry:,.2f}) ke paas hai. Stop-loss ₹{stop:,.2f}, target ₹{target:,.2f}."
+        return "warning", f"Price has run well above entry (₹{entry:,.2f}) — don't chase; wait for a dip back near ₹{entry:,.2f}."
+    return "success", f"You can BUY — price is near the entry zone (₹{entry:,.2f}). Stop-loss ₹{stop:,.2f}, target ₹{target:,.2f}."
