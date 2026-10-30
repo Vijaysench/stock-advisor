@@ -52,6 +52,13 @@ h1,h2,h3,h4{letter-spacing:-.01em}
 .card:hover{transform:translateY(-2px);border-color:rgba(99,102,241,.45)}
 .card h4{margin:0 0 2px 0;font-size:1.08rem}
 .card .sub{color:var(--mut);font-size:.82rem;margin-bottom:8px}
+/* native bordered containers used as pick cards (buttons live INSIDE) */
+div[data-testid="stVerticalBlockBorderWrapper"]{border-radius:16px;border-color:var(--line)!important;
+  background:linear-gradient(180deg,var(--card),var(--card2))}
+div[data-testid="stVerticalBlockBorderWrapper"]:hover{border-color:rgba(99,102,241,.45)!important}
+.pick{min-height:188px}
+.pick h4{margin:0 0 2px 0;font-size:1.08rem}
+.pick .sub{color:var(--mut);font-size:.82rem}
 .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.76rem;font-weight:700;margin:0 4px 4px 0}
 .b-hi{background:var(--greenbg);color:var(--green)}
 .b-mid{background:var(--amberbg);color:var(--amber)}
@@ -589,26 +596,27 @@ if page == P_HOME:
                 dn = (r["stop"] / r["entry"] - 1) * 100
                 trig = "Buy above" if h == "Intraday" else "Buy near"
                 sec = data.sector_of(r["symbol"])
-                st.markdown(f"""<div class='card'>
-<h4>{r['name']}</h4><div class='sub'>{r['symbol']} · now ₹{r['price']:,.2f} · <span class='badge b-sec'>{sec}</span></div>
-{chance_badge(r['chance'])}<span class='badge b-mid'>{r['chance']:.0f}% chance</span>
+                with st.container(border=True):
+                    st.markdown(f"""<div class='pick'>
+<h4>{r['name']}</h4><div class='sub'>{r['symbol']} · now ₹{r['price']:,.2f}</div>
+<div style='margin:4px 0 2px'><span class='badge b-sec'>{sec}</span>{chance_badge(r['chance'])}<span class='badge b-mid'>{r['chance']:.0f}% chance</span></div>
 <div class='row3'><div class='r-buy'>{trig}<b>₹{r['entry']:,.1f}</b></div>
 <div class='r-sl'>Stop-loss<b>₹{r['stop']:,.1f}</b>{dn:.1f}%</div>
 <div class='r-tg'>Target<b>₹{r['target']:,.1f}</b>+{up:.1f}%</div></div>
 <div class='sub' style='margin-top:8px'>Profit in {r['wins']} of last {r['bt_trades']} signals</div>
 </div>""", unsafe_allow_html=True)
-                c1, c2 = st.columns(2)
-                c1.button("Full plan ➜", key=f"go_{h}_{r['symbol']}", on_click=go_to, args=(r["symbol"], h), width="stretch")
-                with c2:
-                    if tracker.is_tracked(APP_DIR, r["symbol"], h):
-                        if st.button("📌 In bucket", key=f"ut_{h}_{r['symbol']}", width="stretch"):
-                            tracker.remove(APP_DIR, r["symbol"], h)
-                            st.rerun()
-                    else:
-                        if st.button("➕ Bucket", key=f"t_{h}_{r['symbol']}", width="stretch"):
-                            tracker.add(APP_DIR, r)
-                            st.toast(f"Added {r['name']}")
-                            st.rerun()
+                    c1, c2 = st.columns(2)
+                    c1.button("Full plan ➜", key=f"go_{h}_{r['symbol']}", on_click=go_to, args=(r["symbol"], h), width="stretch")
+                    with c2:
+                        if tracker.is_tracked(APP_DIR, r["symbol"], h):
+                            if st.button("📌 In bucket", key=f"ut_{h}_{r['symbol']}", width="stretch"):
+                                tracker.remove(APP_DIR, r["symbol"], h)
+                                st.rerun()
+                        else:
+                            if st.button("➕ Bucket", key=f"t_{h}_{r['symbol']}", width="stretch"):
+                                tracker.add(APP_DIR, r)
+                                st.toast(f"Added {r['name']}")
+                                st.rerun()
 
     sells = sorted([r for r in results[h] if r["signal"].startswith("SELL") and price_lo <= r["price"] < price_hi],
                    key=lambda r: -r["score"])[:12]

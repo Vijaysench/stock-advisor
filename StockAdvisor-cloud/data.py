@@ -426,6 +426,34 @@ def download_intraday(symbol: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def key_stats(symbol: str) -> dict:
+    """Raw fundamental numbers used for the quality score. Returns {} if Yahoo
+    doesn't give them (the app then falls back to technicals only)."""
+    try:
+        info = _yf().Ticker(f"{symbol}.NS").info
+    except Exception:
+        return {}
+    if not isinstance(info, dict):
+        return {}
+
+    def g(k):
+        v = info.get(k)
+        return float(v) if isinstance(v, (int, float)) else None
+
+    de = g("debtToEquity")
+    if de is not None and de > 5:   # yfinance gives D/E as a percent (e.g. 45.0 = 0.45x)
+        de = de / 100.0
+    peg = g("pegRatio") or g("trailingPegRatio")
+    return dict(
+        roe=g("returnOnEquity"), de=de,
+        rev_growth=g("revenueGrowth"), earnings_growth=g("earningsGrowth"),
+        profit_margin=g("profitMargins"),
+        pe=g("trailingPE"), pb=g("priceToBook"), peg=peg,
+        market_cap=g("marketCap"),
+        sector=info.get("sector"), reco=info.get("recommendationKey"),
+    )
+
+
 def fundamentals(symbol: str) -> dict:
     try:
         info = _yf().Ticker(f"{symbol}.NS").info

@@ -496,6 +496,114 @@ def adjusted_chance(wins: float, trades: int, prior: float, k: int = 10) -> floa
     return (wins + prior / 100 * k) / (trades + k) * 100
 
 
+# --------------------------------------------------------------------------
+# Fundamental quality + factor scores + overall conviction
+# (how a research desk judges a stock: company strength + valuation, not just
+#  the chart). All graceful: missing data just lowers that part's weight.
+# --------------------------------------------------------------------------
+def _band(v, thresholds, scores):
+    """thresholds high->low with matching scores; picks first threshold v meets."""
+    for t, s in zip(thresholds, scores):
+        if v >= t:
+            return s
+    return scores[-1]
+
+
+def fundamental_score(stats: dict | None) -> dict:
+    """Company-quality score 0-100 from growth, profitability, debt, valuation.
+    Returns {score, have, pros, cons, rows} ; score=None if no data at all."""
+    if not stats:
+        return dict(score=None, have=False, pros=[], cons=[], rows=[])
+    parts, pros, cons, rows = [], [], [], []
+
+    def add(label, val, weight, sub, good_txt, bad_txt, fmt):
+        if val is None:
+            return
+        parts.append((weight, sub))
+        rows.append((label, fmt(val), sub))
+        if sub >= 70:
+            pros.append(good_txt)
+        elif sub <= 40:
+            cons.append(bad_txt)
+
+    roe = stats.get("roe")
+    add("Return on equity (ROE)", roe, 0.22,
+        _band(roe, [0.18, 0.12, 0.08, 0.0], [100, 75, 55, 30, 10]) if roe is not None else None,
+        "Uses shareholders' money very efficiently (high ROE)", "Weak returns on capital (low ROE)",
+        lambda v: f"{v*100:.0f}%")
+    eg = stats.get("earnings_growth")
+    add("Profit growth", eg, 0.18,
+        _band(eg, [0.15, 0.05, 0.0], [100, 75, 55, 20]) if eg is not None else None,
+        "Profits are growing strongly", "Profits are shrinking", lambda v: f"{v*100:.0f}%")
+    rg = stats.get("rev_growth")
+    add("Sales growth", rg, 0.15,
+        _band(rg, [0.15, 0.08, 0.0], [100, 75, 55, 25]) if rg is not None else None,
+        "Sales are growing fast", "Sales are falling", lambda v: f"{v*100:.0f}%")
+    pm = stats.get("profit_margin")
+    add("Profit margin", pm, 0.12,
+        _band(pm, [0.15, 0.08, 0.03, 0.0], [100, 78, 55, 30, 10]) if pm is not None else None,
+        "Keeps a healthy profit on each sale", "Very thin profit margins", lambda v: f"{v*100:.0f}%")
+    de = stats.get("de")
+    if de is not None:
+        sub = 100 if de <= 0.3 else 80 if de <= 0.7 else 60 if de <= 1.0 else 40 if de <= 1.5 else 20
+        add("Debt vs equity", de, 0.15, sub, "Low debt — financially safe", "High debt — risky", lambda v: f"{v:.2f}x")
+    peg = stats.get("peg")
+    pe = stats.get("pe")
+    if peg is not None:
+        sub = 100 if peg <= 1 else 75 if peg <= 2 else 50 if peg <= 3 else 25
+        add("Valuation (PEG)", peg, 0.10, sub, "Fairly priced for its growth", "Expensive vs its growth", lambda v: f"{v:.2f}")
+    elif pe is not None and pe > 0:
+        sub = 90 if pe <= 15 else 70 if pe <= 25 else 45 if pe <= 40 else 20
+        add("Valuation (P/E)", pe, 0.10, sub, "Reasonably valued", "Looks expensive (high P/E)", lambda v: f"{v:.1f}")
+    mc = stats.get("market_cap")
+    if mc is not None:
+        sub = 100 if mc >= 2e12 else 80 if mc >= 5e11 else 60 if mc >= 1e11 else 45
+        add("Company size", mc, 0.08, sub, "Large, established company", "Smaller company — more volatile",
+            lambda v: f"₹{v/1e7:,.0f} Cr")
+
+    if not parts:
+        return dict(score=None, have=False, pros=[], cons=[], rows=[])
+    wsum = sum(w for w, _ in parts)
+    score = sum(w * s for w, s in parts) / wsum
+    return dict(score=round(score), have=True, pros=pros[:4], cons=cons[:4], rows=rows)
+
+
+def factor_scores(last, fund_score, rs: float = 0.0) -> dict:
+    """Five 0-100 factor bars, like a quick quant snapshot. `last` = latest
+    indicator row (d.iloc[-1]). Skips Quality if no fundamentals."""
+    c = float(last.Close)
+    trend = (int(c > last.ema21) + int(last.ema21 > last.ema50) + int(c > last.ema50)
+             + int(c > last.ema200) + int(last.ema50 > last.ema200)) / 5 * 100
+    mom = 50 + float(last.ret20) * 1.2 + (float(last.rsi) - 50) * 0.8 + (10 if last.macd_hist > 0 else -10)
+    mom = max(0, min(100, mom)) * 0.6 + max(0, min(100, 50 + rs * 2)) * 0.4
+    atrp = float(last.atr_pct)
+    stability = max(0, min(100, 100 - (atrp - 1.0) * 22))
+    out = {"Trend": round(trend), "Momentum": round(mom), "Stability": round(stability)}
+    if fund_score is not None:
+        out["Quality"] = int(fund_score)
+    return out
+
+
+def conviction(chance: float, fund_score, rs: float, regime_ok) -> dict:
+    """Blend the measured technical 'chance' with company quality, relative
+    strength and market mood into one High/Medium/Low rating."""
+    base = chance if chance else 50.0
+    if fund_score is not None:
+        combined = 0.6 * base + 0.4 * fund_score
+    else:
+        combined = base
+    combined += 3 if rs > 0 else -3
+    combined *= 1.0 if regime_ok else 0.95 if regime_ok is None else 0.90
+    combined = max(0, min(100, combined))
+    if combined >= 62:
+        label, tone = "High conviction", "b-hi"
+    elif combined >= 52:
+        label, tone = "Medium conviction", "b-mid"
+    else:
+        label, tone = "Low conviction", "b-lo"
+    return dict(score=round(combined), label=label, tone=tone)
+
+
 def live_verdict(r: dict, live_price: float, vwap: float | None, status: str) -> tuple[str, str]:
     """Simple 'what should I do right now' message. Returns (level, text)."""
     side, h = r["side"], r["horizon"]
